@@ -33,5 +33,6 @@ pi.onload = function() {
 }
 pi.src = 'https://varnius.github.io/kanaka/pixi.min.js';   
 
-console.log('debug', window, this);
-console.log('debug top', window.top, this);
+console.log('window', window);
+console.log('this', this);
+console.log('debug top', window.top.document);
