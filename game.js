@@ -135,6 +135,13 @@ window.addEventListener('load', function ()
             drill.position.y = TILE_SIZE;
         }
     }
+
+    // Add dummy div for click event
+    var dummyDiv = document.body.appendChild(document.createElement('div'));
+    dummyDiv.style.width = '100%';
+    dummyDiv.style.height = '100%';
+    dummyDiv.style.position = 'absolute';
+    dummyDiv.style.top = '0';
 });
 
 var score = 0;
