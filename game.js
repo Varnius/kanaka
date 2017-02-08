@@ -135,6 +135,8 @@ setInterval(function ()
     window.parent.postMessage('Your score: ' + score, "*");
 }, 2000);
 
-//window.addEventListener("message", function(ev){
-//  document.body.appendChild(document.createTextNode(ev.data))
-//}, false);
+window.addEventListener("message", function(ev){
+    if (ev.data.type === 'START_GAME') {
+        window.focus();
+    }
+}, false);
