@@ -1,6 +1,8 @@
 var pi = document.body.appendChild(document.createElement('script'));
 pi.onload = function() {
-   
+   console.log(pi);
+   console.log(PIXI);
+   console.log(PIXI.Application);
     var type = "WebGL"
     if(!PIXI.utils.isWebGLSupported()){
       type = "canvas"
