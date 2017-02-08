@@ -1,4 +1,4 @@
-windonw.addEventListener('load', function(){
+window.addEventListener('load', function(){
     
     var app = new PIXI.Application(960, 600, {backgroundColor : 0x1099bb});
 
