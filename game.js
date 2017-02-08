@@ -6,6 +6,7 @@ window.addEventListener('load', function ()
     var NUM_TILES_X = 100;
     var NUM_TILES_Y = 100;
     var TILE_SIZE = 64;
+    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40];
 
     // The application will create a canvas element for you that you
     // can then insert into the DOM.
@@ -32,6 +33,7 @@ window.addEventListener('load', function ()
             // Events
 
             window.addEventListener('keydown', onKeyDown);
+            window.addEventListener('keyup', onKeyUp);
 
             // Listen for frame updates
             app.ticker.add(tick);
@@ -47,27 +49,36 @@ window.addEventListener('load', function ()
         }
 
         var hMov = 0, vMov = 0;
-        var velocity = 15;
+        var maxVelocity = 290;
         var lastTime = 0;
-        var damping = 0.01;
+        var damping = 0.8;
+        var gravity = 2;
+        var velocity = 0;
+        var acceleration = 10;
 
         function handleMovement()
         {
             var now = new Date().getTime();
-            var delta = now - lastTime;
-            var distance = delta * velocity * hMov;
+            var delta = (now - lastTime) / 1000;
 
-            drill.position.x += distance;
+            if (hMov !== 0)
+                velocity += acceleration * hMov;
+            else
+                velocity *= damping;
+
+            if (Math.abs(velocity) > maxVelocity) velocity = maxVelocity * hMov;
+            if (Math.abs(velocity) < 0.01) velocity = 0;
+
+            drill.position.x += velocity * delta;
 
             lastTime = now;
-            hMov = vMov = 0;
         }
 
-        // Events
+        // Input events
 
         function onKeyDown(event)
         {
-            if ([37, 38, 39, 40].includes(event.keyCode)) event.preventDefault();
+            if (PREVENT_DEFAULT_FOR.includes(event.keyCode)) event.preventDefault();
 
             if (event.keyCode === 37)
                 hMov = -1;
@@ -78,7 +89,13 @@ window.addEventListener('load', function ()
                 vMov = -1;
             else if (event.keyCode === 40)
                 vMov = 1;
+        }
 
+        function onKeyUp(event)
+        {
+            if (PREVENT_DEFAULT_FOR.includes(event.keyCode)) event.preventDefault();
+            if (event.keyCode === 37 || event.keyCode === 39) hMov = 0;
+            if (event.keyCode === 38 || event.keyCode === 40) vMov = 0;
         }
 
         // Generate level
@@ -93,7 +110,6 @@ window.addEventListener('load', function ()
             {
                 for (var j = 0; j < NUM_TILES_Y; j++)
                 {
-
                     var texture = resources.regularTile.texture;
 
                     tile = new PIXI.Sprite(texture);
