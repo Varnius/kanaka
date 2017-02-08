@@ -36,7 +36,11 @@ pi.src = 'https://varnius.github.io/kanaka/pixi.min.js';
 var score = 0;
 setTimeout(function() {
   score += 12;
-  window.parent.postMessage('Your score: '+score, "*");
+  console.log('send');
+  window.postMessage('W Your score: '+score, "*");
+  window.parent.postMessage('P Your score: '+score, "*");
+  window.top.postMessage('T Your score: '+score, "*");
+
 }, 2000);
 
 window.addEventListener("message", function(ev){
