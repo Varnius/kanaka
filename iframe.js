@@ -38,7 +38,7 @@ PIXI.loader.add('bunny', 'https://varnius.github.io/kanaka/assets/musa.png').loa
     });
 });
 }
-pi.src = 'http://pixijs.download/v4.3.3/pixi.min.js';                                                          
+pi.src = 'https://varnius.github.io/kanaka/pixi.min.js';                                                          
 
                                                           
 // var c = document.body.appendChild(document.createElement('canvas'));
