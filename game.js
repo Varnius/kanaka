@@ -1,7 +1,11 @@
-window.addEventListener('load', function(){
+window.addEventListener('load', function ()
+{
 
-    var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb });
+    var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb, roundPixels: true });
     var renderer = app.renderer;
+    var NUM_TILES_X = 100;
+    var NUM_TILES_Y = 100;
+    var TILE_SIZE = 64;
 
     // The application will create a canvas element for you that you
     // can then insert into the DOM.
@@ -23,65 +27,107 @@ window.addEventListener('load', function(){
     {
         init();
 
-        function init() {
-            // This creates a texture from a 'bunny.png' image.
-            bunny = new PIXI.Sprite(resources.drill.texture);
+        function init()
+        {
+            // Events
 
-            // Setup the position of the bunny
-            bunny.x = app.renderer.width / 2;
-            bunny.y = app.renderer.height / 2;
-
-            // Rotate around the center
-            bunny.anchor.x = 0.5;
-            bunny.anchor.y = 0.5;
-
-            // Add the bunny to the scene we are building.
-            app.stage.addChild(bunny);
+            window.addEventListener('keydown', onKeyDown);
 
             // Listen for frame updates
             app.ticker.add(tick);
-            generateGrid();
+            createGrid();
+            createDrill();
         }
 
         // Render loop
 
-        function tick() {
-            bunny.rotation += 0.01;
+        function tick()
+        {
+            handleMovement();
+        }
+
+        var hMov = 0, vMov = 0;
+        var velocity = 15;
+        var lastTime = 0;
+        var damping = 0.01;
+
+        function handleMovement()
+        {
+            var now = new Date().getTime();
+            var delta = now - lastTime;
+            var distance = delta * velocity * hMov;
+
+            drill.position.x += distance;
+
+            lastTime = now;
+            hMov = vMov = 0;
+        }
+
+        // Events
+
+        function onKeyDown(event)
+        {
+            if ([37, 38, 39, 40].includes(event.keyCode)) event.preventDefault();
+
+            if (event.keyCode === 37)
+                hMov = -1;
+            else if (event.keyCode === 39)
+                hMov = 1;
+
+            if (event.keyCode === 38)
+                vMov = -1;
+            else if (event.keyCode === 40)
+                vMov = 1;
+
         }
 
         // Generate level
 
-        function generateGrid() {
+        function createGrid()
+        {
             var tile;
-            var container = new PIXI.Container();
-            stage.addChild(container);
+            var tiles = new PIXI.Container();
+            stage.addChild(tiles);
 
-            var numTilesX = 15;
-            var numTilesY = 10;
-            var tileSize = Math.round(renderer.width / numTilesX);
-
-            for (var i = 0; i < numTilesX; i++) {
-                for (var j = 0; j < numTilesY; j++) {
+            for (var i = -NUM_TILES_X / 2; i < NUM_TILES_X; i++)
+            {
+                for (var j = 0; j < NUM_TILES_Y; j++)
+                {
 
                     var texture = resources.regularTile.texture;
 
                     tile = new PIXI.Sprite(texture);
-                    tile.position.x = i * tileSize;
-                    tile.position.y = j * tileSize;
+                    tile.position.x = i * TILE_SIZE;
+                    tile.position.y = j * TILE_SIZE;
 
-                    container.addChild(tile);
+                    tiles.addChild(tile);
                 }
             }
+
+            tiles.position.y = 128;
+        }
+
+        var drill;
+
+        function createDrill()
+        {
+            drill = new PIXI.Container();
+
+            stage.addChild(drill);
+            drill.addChild(new PIXI.Sprite(resources.drill.texture));
+            drill.position.x = TILE_SIZE * 7;
+            drill.position.y = TILE_SIZE;
         }
     }
 });
 
 var score = 0;
-setInterval(function() {
-  score += 2;
-  window.parent.postMessage('Your score: '+score, "*");
+setInterval(function ()
+{
+    score += 2;
+    window.parent.postMessage('Your score: ' + score, "*");
 }, 2000);
 
-window.addEventListener("message", function(ev){
-  document.body.appendChild(document.createTextNode(ev.data))
-}, false);
+//window.addEventListener("message", function(ev){
+//  document.body.appendChild(document.createTextNode(ev.data))
+//}, false);
