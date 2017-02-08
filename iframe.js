@@ -1,4 +1,4 @@
-var pi = document.body.appendChild(document.createElement('script));
+var pi = document.body.appendChild(document.createElement('script'));
 pi.src = 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.2.2/pixi.min.js';                                                          
 pi.onload = function() {
     var type = "WebGL"
