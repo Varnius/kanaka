@@ -15,7 +15,7 @@ pi.onload = function() {
 document.body.appendChild(app.view);
 
 // load the texture we need
-PIXI.loader.add('bunny', 'http://www.clker.com/cliparts/8/e/m/T/C/D/dark-gray-bunny-hi.png').load(function(loader, resources) {
+PIXI.loader.add('bunny', 'assets/musa.png').load(function(loader, resources) {
 
     // This creates a texture from a 'bunny.png' image.
     var bunny = new PIXI.Sprite(resources.bunny.texture);
