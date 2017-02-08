@@ -1,14 +1,6 @@
 var pi = document.body.appendChild(document.createElement('script'));
-setTimeout(function(){
-console.log(pi);
-   console.log(PIXI);
-   console.log(PIXI.Application);
-}, 2000);
 
-pi.onload_temp = function() {
-   console.log(pi);
-   console.log(PIXI);
-   console.log(PIXI.Application);
+pi.onload = function() {
     var type = "WebGL"
     if(!PIXI.utils.isWebGLSupported()){
       type = "canvas"
