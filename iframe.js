@@ -46,7 +46,7 @@ PIXI.loader.add('bunny', 'http://www.clker.com/cliparts/8/e/m/T/C/D/dark-gray-bu
     });
 });
 }
-pi.src = 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.2.2/pixi.min.js';                                                          
+pi.src = 'http://pixijs.download/v4.3.3/pixi.min.js';                                                          
 
                                                           
 // var c = document.body.appendChild(document.createElement('canvas'));
