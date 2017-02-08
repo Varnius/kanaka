@@ -1,5 +1,4 @@
 var pi = document.body.appendChild(document.createElement('script'));
-pi.src = 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.2.2/pixi.min.js';                                                          
 pi.onload = function() {
    
     var type = "WebGL"
@@ -39,6 +38,8 @@ PIXI.loader.add('bunny', 'http://www.clker.com/cliparts/8/e/m/T/C/D/dark-gray-bu
     });
 });
 }
+pi.src = 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.2.2/pixi.min.js';                                                          
+
                                                           
 // var c = document.body.appendChild(document.createElement('canvas'));
 // c.id = 'canvas';
