@@ -1,6 +1,14 @@
 var pi = document.body.appendChild(document.createElement('script'));
 pi.src = 'https://cdnjs.cloudflare.com/ajax/libs/pixi.js/4.2.2/pixi.min.js';                                                          
 pi.onload = function() {
+   
+    var type = "WebGL"
+    if(!PIXI.utils.isWebGLSupported()){
+      type = "canvas"
+    }
+
+    PIXI.utils.sayHello(type)
+   
    var app = new PIXI.Application();
 
 // The application will create a canvas element for you that you 
