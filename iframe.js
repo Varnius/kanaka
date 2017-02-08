@@ -1,5 +1,4 @@
-var d= document.getElementById('game').contentWindow.document;
-var c = d.body.appendChild(d.createElement('canvas'));
+var c = document.body.appendChild(document.createElement('canvas'));
 c.id = 'canvas';
 c.width = '400';
 c.height = '300';
