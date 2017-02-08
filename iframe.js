@@ -39,3 +39,8 @@ setTimeout(function() {
   window.parent.postMessage('Your score: '+score, "*");
 }, 2000);
 
+window.addEventListener("message", function(ev){
+  console.log('game window', ev);
+  document.body.appendChild(document.createTextNode(ev.data))
+}, false);
+
