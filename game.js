@@ -1,10 +1,9 @@
-var pi = document.body.appendChild(document.createElement('script'));
-pi.onload = function ()
-{
+window.addEventListener('load', function(){
+
     var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb });
     var renderer = app.renderer;
 
-    // The application will create a canvas element for you that you 
+    // The application will create a canvas element for you that you
     // can then insert into the DOM.
     document.body.appendChild(app.view);
 
@@ -75,6 +74,14 @@ pi.onload = function ()
             }
         }
     }
-};
+});
 
-pi.src = 'https://varnius.github.io/kanaka/pixi.min.js';
+var score = 0;
+setInterval(function() {
+  score += 2;
+  window.parent.postMessage('Your score: '+score, "*");
+}, 2000);
+
+window.addEventListener("message", function(ev){
+  document.body.appendChild(document.createTextNode(ev.data))
+}, false);
