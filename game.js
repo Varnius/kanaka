@@ -30,3 +30,13 @@ window.addEventListener('load', function(){
         });
     });
 });
+
+var score = 0;
+setInterval(function() {
+  score += 2;
+  window.parent.postMessage('Your score: '+score, "*");
+}, 2000);
+
+window.addEventListener("message", function(ev){
+  document.body.appendChild(document.createTextNode(ev.data))
+}, false);
