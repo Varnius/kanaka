@@ -8,6 +8,7 @@
         window.dev = true;
     </script>
     <script type="application/javascript" src="./src/keyboard.js"></script>
+    <script type="application/javascript" src="./src/matter.js"></script>
     <script type="application/javascript" src="pixi.min.js"></script>
     <script type="application/javascript" src="game.js" defer></script>
     <style>
@@ -15,13 +16,16 @@
             background: black;
             width: 100%;
             height: 100vh;
-            display: flex;
-            justify-content: center;
-            align-items: center;
         }
 
         canvas {
-            border: 3px solid #333;
+            position: absolute;
+            top: 0;
+            left: 0;
+        }
+
+        canvas:nth-child(2) {
+            opacity: 0.5;
         }
     </style>
 </head>
