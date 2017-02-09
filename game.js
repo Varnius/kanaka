@@ -65,11 +65,12 @@ window.addEventListener('load', function ()
         // Game loop
 
         var lastTime = 0;
+        var delta;
 
         function tick()
         {
             var now = new Date().getTime();
-            var delta = (now - lastTime) / 1000;
+            delta = (now - lastTime) / 1000;
 
             handleMovement();
             Engine.update(engine);
@@ -94,7 +95,7 @@ window.addEventListener('load', function ()
             //if (Math.abs(hVelocity) < 0.01) hVelocity = 0;
 
             //drill.position.x += hVelocity * delta;
-            Body.setVelocity(drill.body, { x: 100, y: 0});
+            Body.setVelocity(drill.body, { x: hVelocity * delta, y: 0});
             updateDrillPosition();
         }
 
@@ -187,7 +188,7 @@ window.addEventListener('load', function ()
             World.add(engine.world, [player]);
 
             drill = new PIXI.Container();
-            drill.body = drillBody;
+            drill.body = player;
 
             stage.addChild(drill);
             drill.addChild(new PIXI.Sprite(resources.drill.texture));
