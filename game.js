@@ -14,15 +14,15 @@ window.addEventListener('load', function () {
     var TileType = {
         SKY: {
             ghost: true,
-            texture: 'sky',
+            texture: 'tile-sky',
         },
         REGULAR: {
             drillDuration: 2,
-            texture: 'regularTile',
+            texture: 'tile-regular',
         },
         DRILLED: {
             ghost: true,
-            texture: 'drilled',
+            texture: 'tile-drilled',
         },
     };
 
@@ -36,22 +36,26 @@ window.addEventListener('load', function () {
 
     var engine = Engine.create();
     engine.world.gravity.y = 20;
-    var render = Render.create({
-        element: document.body,
-        engine: engine,
-        options: {
-            width: 960,
-            height: 600,
-        }
-    });
+    var render;
+
+    if(window.dev) {
+        render = Render.create({
+            element: document.body,
+            engine: engine,
+            options: {
+                width: 960,
+                height: 600,
+            }
+        });
+    }
 
     // Load things
 
     var assetLocation = !window.dev ? 'https://varnius.github.io/kanaka/' : '';
 
-    PIXI.loader.add('drill', assetLocation + 'assets/musa.png');
-    PIXI.loader.add('regularTile', assetLocation + 'assets/tile-test.png');
-    PIXI.loader.add('sky', assetLocation + 'assets/sky.png');
+    PIXI.loader.add('drill', assetLocation + 'assets/drill.png');
+    PIXI.loader.add('tile-regular', assetLocation + 'assets/tile-test.png');
+    PIXI.loader.add('tile-sky', assetLocation + 'assets/sky.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
@@ -70,7 +74,7 @@ window.addEventListener('load', function () {
             createDrill();
 
             // physics debug renderer
-            Render.run(render);
+            if (window.dev) Render.run(render);
         }
 
         // Game loop
