@@ -1,24 +1,41 @@
-window.addEventListener('load', function ()
-{
-    var NUM_TILES_X = 100;
-    var NUM_TILES_Y = 100;
-    var TILE_SIZE = 64;
-    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40];
-
-    // Setup PIXI
-
-    var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb, roundPixels: true });
-    document.body.appendChild(app.view);
-
-    // Setup physics
-
+window.addEventListener('load', function () {
     var Engine = Matter.Engine,
         Render = Matter.Render,
         World = Matter.World,
         Bodies = Matter.Bodies,
-        Body = Matter.Body;
+        Body = Matter.Body,
+        Query = Matter.Query;
+
+    var NUM_TILES_X = 100;
+    var NUM_TILES_Y = 100;
+    var TILE_SIZE = 64;
+    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32];
+
+    var TileType = {
+        SKY: {
+            ghost: true,
+            texture: 'sky',
+        },
+        REGULAR: {
+            drillDuration: 2,
+            texture: 'regularTile',
+        },
+        DRILLED: {
+            ghost: true,
+            texture: 'drilled',
+        },
+    };
+
+    // Setup PIXI
+
+    var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb, roundPixels: true });
+    var stage = app.stage;
+    document.body.appendChild(app.view);
+
+    // Physics
 
     var engine = Engine.create();
+    engine.world.gravity.y = 20;
     var render = Render.create({
         element: document.body,
         engine: engine,
@@ -38,15 +55,10 @@ window.addEventListener('load', function ()
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
-    var bunny;
-    var stage = app.stage;
-
-    function onAssetsLoaded(loader, resources)
-    {
+    function onAssetsLoaded(loader, resources) {
         init();
 
-        function init()
-        {
+        function init() {
             // Events
 
             window.addEventListener('keydown', onKeyDown);
@@ -57,8 +69,7 @@ window.addEventListener('load', function ()
             createGrid();
             createDrill();
 
-            // Run physics
-            //Engine.run(engine);
+            // physics debug renderer
             Render.run(render);
         }
 
@@ -67,36 +78,79 @@ window.addEventListener('load', function ()
         var lastTime = 0;
         var delta;
 
-        function tick()
-        {
+        var hMov = 0;
+        var maxVelocity = 260;
+        var damping = 0.7;
+        var hVelocity = 0;
+        var vVelocity = 0;
+        var acceleration = 15;
+        var isFlying = false;
+        var isDrilling = false;
+        var drillDirection;
+        var prevX;
+
+        var tiles;
+        var drill;
+
+        function tick() {
             var now = new Date().getTime();
             delta = (now - lastTime) / 1000;
 
             handleMovement();
+            handleDrill();
+            updateDrillPosition();
             Engine.update(engine);
 
             lastTime = now;
         }
 
-        var hMov = 0, vMov = 0;
-        var maxVelocity = 300;
-        var damping = 0.85;
-        var hVelocity = 0;
-        var acceleration = 10;
-
-        function handleMovement()
-        {
+        function handleMovement() {
             if (hMov !== 0)
-                hVelocity += acceleration * hMov;
+                hVelocity += (hVelocity * hMov < 0 ? 4 : 1) * acceleration * hMov;
             else
                 hVelocity *= damping;
 
-            //if (Math.abs(hVelocity) > maxVelocity) hVelocity = maxVelocity * hMov;
-            //if (Math.abs(hVelocity) < 0.01) hVelocity = 0;
+            if (isFlying) vVelocity += acceleration;
 
-            //drill.position.x += hVelocity * delta;
-            Body.setVelocity(drill.body, { x: hVelocity * delta, y: 0});
-            updateDrillPosition();
+            if (Math.abs(hVelocity) > maxVelocity) hVelocity = maxVelocity * hMov;
+            if (Math.abs(hVelocity) < 0.1) hVelocity = 0;
+            if (Math.abs(vVelocity) > maxVelocity) vVelocity = maxVelocity;
+
+            Body.setVelocity(drill.body, { x: hVelocity * delta, y: isFlying ? -(vVelocity * delta) : 0 });
+
+            if (Math.abs(prevX - drill.body.position.x) < 0.1 && hMov !== 0) hVelocity = 0;
+
+            prevX = drill.body.position.x;
+        }
+
+        function handleDrill() {
+            if (!isDrilling || !drillDirection) return;
+
+            var end;
+            var pos = drill.body.position;
+            var rayLength = 40;
+
+            if (drillDirection === 'up') end = { x: pos.x, y: pos.y - rayLength };
+            if (drillDirection === 'down') end = { x: pos.x, y: pos.y + rayLength };
+            if (drillDirection === 'left') end = { x: pos.x - rayLength, y: pos.y };
+            if (drillDirection === 'right') end = { x: pos.x + rayLength, y: pos.y };
+
+            var bodies = Matter.Composite.allBodies(engine.world);
+            var res = Query.ray(bodies, pos, end);
+
+            if (res.length > 1) {
+                var tile = res[0].body.tile;
+                tile.timeLeft -= delta;
+
+                let colorMatrix = new PIXI.filters.ColorMatrixFilter();
+                tile.filters = [colorMatrix];
+                colorMatrix.contrast(2);
+
+                if (tile.timeLeft < 0) {
+                    tiles.removeChild(tile);
+                    Matter.World.remove(engine.world, tile.body);
+                }
+            }
         }
 
         function updateDrillPosition() {
@@ -106,53 +160,57 @@ window.addEventListener('load', function ()
 
         // Input events
 
-        function onKeyDown(event)
-        {
+        function onKeyDown(event) {
             if (PREVENT_DEFAULT_FOR.includes(event.keyCode)) event.preventDefault();
 
             if (event.keyCode === 37) hMov = -1;
             else if (event.keyCode === 39) hMov = 1;
 
-            if (event.keyCode === 38) vMov = -1;
-            else if (event.keyCode === 40) vMov = 1;
+            if (event.keyCode === 37) drillDirection = 'left';
+            if (event.keyCode === 39) drillDirection = 'right';
+            if (event.keyCode === 38) drillDirection = 'up';
+            if (event.keyCode === 40) drillDirection = 'down'
+
+            if (event.keyCode === 32) isFlying = true;
+            if (event.keyCode === 68) isDrilling = true;
         }
 
-        function onKeyUp(event)
-        {
+        function onKeyUp(event) {
             if (PREVENT_DEFAULT_FOR.includes(event.keyCode)) event.preventDefault();
             if (event.keyCode === 37 || event.keyCode === 39) hMov = 0;
-            if (event.keyCode === 38 || event.keyCode === 40) vMov = 0;
+            if (event.keyCode === 32) isFlying = false;
+
+            if ([37, 38, 39, 40].includes(event.keyCode)) drillDirection = null;
+            if (event.keyCode === 68) isDrilling = false;
         }
 
         // Generate level
 
-        var tiles;
-        var drill;
-
-        function createGrid()
-        {
-            var tile;
+        function createGrid() {
             var bodies = [];
             tiles = new PIXI.Container();
             stage.addChild(tiles);
 
-            for (var i = -NUM_TILES_X / 2; i < NUM_TILES_X; i++)
-            {
-                for (var j = 0; j < NUM_TILES_Y; j++)
-                {
-                    var isGhost = (j === 0 || j === 1) && (i > 1 && i < 13);
-                    isGhost = isGhost || (j === 2 && i === 10);
-                    var texture = isGhost ? resources.sky.texture : resources.regularTile.texture;
+            for (var i = -NUM_TILES_X / 2; i < NUM_TILES_X; i++) {
+                for (var j = 0; j < NUM_TILES_Y; j++) {
+                    var isSky = (j === 0 || j === 1) && (i > 1 && i < 13);
+                    isSky = isSky || (j === 2 && i === 10);
 
-                    tile = new PIXI.Sprite(texture);
+                    var type = isSky ? TileType.SKY : TileType.REGULAR,
+
+                        tile = new PIXI.Sprite(resources[type.texture].texture);
                     var posX = i * TILE_SIZE + TILE_SIZE / 2;
                     var posY = j * TILE_SIZE + TILE_SIZE / 2;
                     tile.x = posX - TILE_SIZE / 2;
                     tile.y = posY - TILE_SIZE / 2;
 
-                    if (!isGhost)
-                    {
-                        tile.body = Bodies.rectangle(posX, posY, TILE_SIZE, TILE_SIZE, { isStatic: true });
+                    if (!type.ghost) {
+                        tile.body = Bodies.rectangle(posX, posY, TILE_SIZE, TILE_SIZE, {
+                            isStatic: true,
+                            label: `tile ${i} ${j}`
+                        });
+                        tile.body.tile = tile;
+                        tile.timeLeft = type.drillDuration;
                         bodies.push(tile.body);
                     }
 
@@ -163,8 +221,7 @@ window.addEventListener('load', function ()
             World.add(engine.world, bodies);
         }
 
-        function createDrill()
-        {
+        function createDrill() {
             const drillBody = Matter.Bodies.circle(0, 0, 25);
 
             var jumpSensor = Bodies.rectangle(0, 30, 10, 10, {
@@ -179,6 +236,7 @@ window.addEventListener('load', function ()
                 //frictionStatic: 0.5,
                 restitution: 0.3,
                 sleepThreshold: Infinity,
+                label: 'drill',
                 //collisionFilter: {
                 //    group: -2
                 //},
@@ -209,13 +267,12 @@ window.addEventListener('load', function ()
 });
 
 var score = 0;
-setInterval(function ()
-{
+setInterval(function () {
     score += 2;
     window.parent.postMessage('Your score: ' + score, "*");
 }, 2000);
 
-window.addEventListener("message", function(ev){
+window.addEventListener("message", function (ev) {
     if (ev.data.type === 'START_GAME') {
         window.focus();
     }
