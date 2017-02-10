@@ -54,8 +54,8 @@ window.addEventListener('load', function () {
     var assetLocation = !window.dev ? 'https://varnius.github.io/kanaka/' : '';
 
     PIXI.loader.add('drill', assetLocation + 'assets/drill.png');
-    PIXI.loader.add('tile-regular', assetLocation + 'assets/tile-test.png');
-    PIXI.loader.add('tile-sky', assetLocation + 'assets/sky.png');
+    PIXI.loader.add('tile-regular', assetLocation + 'assets/tile-regular.png');
+    PIXI.loader.add('tile-sky', assetLocation + 'assets/tile-sky.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
