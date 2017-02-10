@@ -4,32 +4,43 @@ window.addEventListener('load', function () {
         World = Matter.World,
         Bodies = Matter.Bodies,
         Body = Matter.Body,
-        Query = Matter.Query;
+        Query = Matter.Query,
+        Bounds = Matter.Bounds;
 
-    var NUM_TILES_X = 100;
-    var NUM_TILES_Y = 100;
-    var TILE_SIZE = 64;
-    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32, 68];
+    const SCREEN_WIDTH = 960;
+    const SCREEN_HEIGHT = 600;
+    const NUM_TILES_X = 26;
+    const NUM_TILES_Y = 26;
+    const TILE_SIZE = 64;
+    const PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32, 68];
+    const RUBBER_BAND_FACTOR = 10;
 
     var TileType = {
-        SKY: {
-            ghost: true,
-            texture: 'tile-sky',
+        GRASS: {
+            drillDuration: 1,
+            texture: () => 'grass',
         },
         REGULAR: {
-            drillDuration: 2,
-            texture: 'tile-regular',
+            drillDuration: 1,
+            texture: () => 'dirt',
         },
         DRILLED: {
             ghost: true,
-            texture: 'tile-drilled',
+            texture: () => 'drilled',
+        },
+        IRON: {
+            texture: () => 'iron',
+            chance: 0.05
         },
     };
 
     // Setup PIXI
 
-    var app = new PIXI.Application(960, 600, { backgroundColor: 0x1099bb, roundPixels: true });
+    var app = new PIXI.Application(SCREEN_WIDTH, SCREEN_HEIGHT, { backgroundColor: 0x1099bb, roundPixels: true });
     var stage = app.stage;
+    var level = new PIXI.Container();
+    stage.addChild(level);
+
     document.body.appendChild(app.view);
 
     // Physics
@@ -38,15 +49,16 @@ window.addEventListener('load', function () {
     engine.world.gravity.y = 11;
     var render;
 
-    if(window.dev) {
-        render = Render.create({
-            element: document.body,
-            engine: engine,
-            options: {
-                width: 960,
-                height: 600,
-            }
-        });
+    if (window.dev) {
+        //render = Render.create({
+        //    element: document.body,
+        //    engine: engine,
+        //    options: {
+        //        width: SCREEN_WIDTH,
+        //        height: SCREEN_HEIGHT,
+        //        hasBounds: true,
+        //    }
+        //});
     }
 
     // Load things
@@ -54,12 +66,35 @@ window.addEventListener('load', function () {
     var assetLocation = !window.dev ? 'https://varnius.github.io/kanaka/' : '';
 
     PIXI.loader.add('drill', assetLocation + 'assets/drill.png');
-    PIXI.loader.add('tile-regular', assetLocation + 'assets/tile-regular.png');
-    PIXI.loader.add('tile-sky', assetLocation + 'assets/tile-sky.png');
+    PIXI.loader.add('apparatus', assetLocation + 'assets/apparatus.png');
+    PIXI.loader.add('dirt', assetLocation + 'assets/dirt.png');
+    PIXI.loader.add('grass', assetLocation + 'assets/grass.png');
+    //PIXI.loader.add('iron', assetLocation + 'asets/iron.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
     function onAssetsLoaded(loader, resources) {
+        var lastTime = 0;
+        var delta;
+
+        var hMov = 0;
+        var maxXVelocity = 260;
+        var maxYVelocity = 400;
+        var damping = 0.7;
+        var hVelocity = 0;
+        var vVelocity = 0;
+        var acceleration = 15;
+        var isFlying = false;
+        var isDrilling = false;
+        var drillDirection;
+        var prevX;
+
+        var tiles;
+        var drill;
+
+        const r = new PIXI.Rectangle();
+        const levelBounds = new PIXI.Rectangle();
+
         init();
 
         function init() {
@@ -74,27 +109,11 @@ window.addEventListener('load', function () {
             createDrill();
 
             // physics debug renderer
-            if (window.dev) Render.run(render);
+            //if (window.dev) Render.run(render);
+            //Bounds.translate(render.bounds, {x:1000, y: 1000});
         }
 
         // Game loop
-
-        var lastTime = 0;
-        var delta;
-
-        var hMov = 0;
-        var maxVelocity = 260;
-        var damping = 0.7;
-        var hVelocity = 0;
-        var vVelocity = 0;
-        var acceleration = 15;
-        var isFlying = false;
-        var isDrilling = false;
-        var drillDirection;
-        var prevX;
-
-        var tiles;
-        var drill;
 
         function tick() {
             var now = new Date().getTime();
@@ -103,6 +122,7 @@ window.addEventListener('load', function () {
             handleMovement();
             handleDrill();
             updateDrillPosition();
+            handleCamera();
             Engine.update(engine);
 
             lastTime = now;
@@ -114,11 +134,11 @@ window.addEventListener('load', function () {
             else
                 hVelocity *= damping;
 
-            if (isFlying) vVelocity += acceleration;
+            if (isFlying) vVelocity += acceleration * 2;
 
-            if (Math.abs(hVelocity) > maxVelocity) hVelocity = maxVelocity * hMov;
+            if (Math.abs(hVelocity) > maxXVelocity) hVelocity = maxXVelocity * hMov;
             if (Math.abs(hVelocity) < 0.1) hVelocity = 0;
-            if (Math.abs(vVelocity) > maxVelocity) vVelocity = maxVelocity;
+            if (Math.abs(vVelocity) > maxYVelocity) vVelocity = maxYVelocity;
 
             Body.setVelocity(drill.body, { x: hVelocity * delta, y: isFlying ? -(vVelocity * delta) : 0 });
 
@@ -142,7 +162,7 @@ window.addEventListener('load', function () {
             var bodies = Matter.Composite.allBodies(engine.world);
             var res = Query.ray(bodies, pos, end);
 
-            if (res.length > 1) {
+            if (res.length > 1 && res[0].body.tile) {
                 var tile = res[0].body.tile;
                 tile.timeLeft -= delta;
 
@@ -150,7 +170,7 @@ window.addEventListener('load', function () {
                 tile.filters = [colorMatrix];
                 colorMatrix.contrast(2);
 
-                if (tile.timeLeft < 0) {
+                if (tile.timeLeft <= 0) {
                     tiles.removeChild(tile);
                     Matter.World.remove(engine.world, tile.body);
                 }
@@ -158,8 +178,24 @@ window.addEventListener('load', function () {
         }
 
         function updateDrillPosition() {
-            drill.position.x = drill.body.position.x;
-            drill.position.y = drill.body.position.y;
+            drill.x = drill.body.position.x;
+            drill.y = drill.body.position.y;
+        }
+
+        function handleCamera() {
+            drill.getBounds(false, r);
+            var deltaX = (SCREEN_WIDTH / 2 - r.x + r.width / 2) / RUBBER_BAND_FACTOR;
+            var deltaY = (SCREEN_HEIGHT / 2 - r.y + r.height / 2) / RUBBER_BAND_FACTOR;
+
+            level.x += Math.floor(deltaX);
+            level.y += Math.floor(deltaY);
+            level.getBounds(false, r);
+
+            // Camera bounds
+
+            if (r.x > 0) level.x = -levelBounds.x;
+            if (r.x + r.width < SCREEN_WIDTH) level.x = -(levelBounds.width + levelBounds.x - SCREEN_WIDTH);
+            //if (r.y > 0) level.y = -levelBounds.y;
         }
 
         // Input events
@@ -193,16 +229,16 @@ window.addEventListener('load', function () {
         function createGrid() {
             var bodies = [];
             tiles = new PIXI.Container();
-            stage.addChild(tiles);
+            level.addChild(tiles);
 
             for (var i = -NUM_TILES_X / 2; i < NUM_TILES_X; i++) {
                 for (var j = 0; j < NUM_TILES_Y; j++) {
-                    var isSky = (j === 0 || j === 1) && (i > 1 && i < 13);
-                    isSky = isSky || (j === 2 && i === 10);
+                    var type;
 
-                    var type = isSky ? TileType.SKY : TileType.REGULAR,
+                    if(j === 0) type = TileType.GRASS
+                    else type = TileType.REGULAR;
 
-                        tile = new PIXI.Sprite(resources[type.texture].texture);
+                    var tile = new PIXI.Sprite(resources[type.texture()].texture);
                     var posX = i * TILE_SIZE + TILE_SIZE / 2;
                     var posY = j * TILE_SIZE + TILE_SIZE / 2;
                     tile.x = posX - TILE_SIZE / 2;
@@ -222,6 +258,33 @@ window.addEventListener('load', function () {
                 }
             }
 
+            // Add some boundaries to the sides of the level (left/right/top)
+
+            bodies.push(Bodies.rectangle(
+                (-NUM_TILES_X / 2 * TILE_SIZE) - TILE_SIZE / 2,
+                NUM_TILES_Y * TILE_SIZE / 2 - TILE_SIZE * 2,
+                TILE_SIZE,
+                NUM_TILES_Y * TILE_SIZE + TILE_SIZE * 2,
+                { isStatic: true })
+            );
+
+            bodies.push(Bodies.rectangle(
+                (-NUM_TILES_X / 2 * TILE_SIZE) + (NUM_TILES_X / 2 * TILE_SIZE),
+                -TILE_SIZE * 3 + TILE_SIZE / 2,
+                NUM_TILES_X * 2 * TILE_SIZE,
+                TILE_SIZE,
+                { isStatic: true })
+            );
+
+            bodies.push(Bodies.rectangle(
+                NUM_TILES_X * TILE_SIZE + TILE_SIZE / 2,
+                NUM_TILES_Y * TILE_SIZE / 2 - TILE_SIZE * 2,
+                TILE_SIZE,
+                NUM_TILES_Y * TILE_SIZE + TILE_SIZE * 2,
+                { isStatic: true })
+            );
+
+            level.getBounds(false, levelBounds);
             World.add(engine.world, bodies);
         }
 
@@ -245,14 +308,14 @@ window.addEventListener('load', function () {
                 //    group: -2
                 //},
             });
-            Matter.Body.setPosition(player, { x: TILE_SIZE * 5, y: TILE_SIZE });
+            Matter.Body.setPosition(player, { x:0, y: -TILE_SIZE });
             Matter.Body.setMass(player, 5);
             World.add(engine.world, [player]);
 
             drill = new PIXI.Container();
             drill.body = player;
 
-            stage.addChild(drill);
+            level.addChild(drill);
             drill.addChild(new PIXI.Sprite(resources.drill.texture));
             drill.pivot.set(25, 25);
             drill.position.x = TILE_SIZE * 7;
