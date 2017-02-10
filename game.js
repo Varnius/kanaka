@@ -9,7 +9,7 @@ window.addEventListener('load', function () {
     var NUM_TILES_X = 100;
     var NUM_TILES_Y = 100;
     var TILE_SIZE = 64;
-    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32];
+    var PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32, 68];
 
     var TileType = {
         SKY: {
@@ -35,7 +35,7 @@ window.addEventListener('load', function () {
     // Physics
 
     var engine = Engine.create();
-    engine.world.gravity.y = 20;
+    engine.world.gravity.y = 11;
     var render;
 
     if(window.dev) {
