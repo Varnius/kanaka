@@ -1,4 +1,6 @@
-var initialData;
+var initialData = {
+    fuel: 50,
+};
 
 function initGame() {
     var Engine = Matter.Engine,
@@ -515,3 +517,5 @@ window.addEventListener('message', function (e) {
         initGame();
     }
 }, false);
+
+window.addEventListener('load', initGame);
