@@ -18,7 +18,7 @@ window.addEventListener('load', function () {
 
     var TileType = {
         GRASS: {
-            drillDuration: 1,
+            drillDuration: 0.5,
             texture: () => 'grass',
         },
         REGULAR: {
@@ -123,6 +123,10 @@ window.addEventListener('load', function () {
         const r = new PIXI.Rectangle();
         const levelBounds = new PIXI.Rectangle();
 
+        var particles;
+        var emitters = [];
+        var drillEmitter;
+
         init();
 
         function init() {
@@ -131,10 +135,12 @@ window.addEventListener('load', function () {
             window.addEventListener('keydown', onKeyDown);
             window.addEventListener('keyup', onKeyUp);
 
-            // Listen for frame updates
-            app.ticker.add(tick);
             createGrid();
             createDrill();
+            createEmitters();
+
+            // Listen for frame updates
+            app.ticker.add(tick);
 
             // physics debug renderer
             //if (window.dev) Render.run(render);
@@ -151,9 +157,16 @@ window.addEventListener('load', function () {
             handleDrillProcess();
             updateDrillPosition();
             handleCamera();
+            updateParticles();
             Engine.update(engine);
 
             lastTime = now;
+        }
+
+        function updateParticles() {
+            for (var i = 0; i < emitters.length; i++) {
+                emitters[i].update(delta);
+            }
         }
 
         function handleMovement() {
@@ -181,6 +194,7 @@ window.addEventListener('load', function () {
             if (!isDrilling || !drillDirection) {
                 if (activeTile) activeTile.filters = null;
                 activeTile = null;
+                drillEmitter.emit = false;
                 return;
             }
 
@@ -196,7 +210,31 @@ window.addEventListener('load', function () {
             var bodies = Matter.Composite.allBodies(engine.world);
             var res = Query.ray(bodies, pos, end);
 
+            drillEmitter.emit = false;
+
             if (res.length > 1 && res[0].body.tile) {
+                // Handle drilled particle positions
+                var drillBounds = drill.getBounds();
+                particles.x = drillBounds.x + drillBounds.width / 2;
+                particles.y = drillBounds.y + drillBounds.height - 27;
+                particles.rotation = 0;
+
+                if (drillDirection === 'left') {
+                    particles.rotation = Math.PI / 2;
+                    particles.x -= 25;
+                    particles.y -= 5;
+                } else if (drillDirection === 'right') {
+                    particles.rotation = -Math.PI / 2;
+                    particles.x += 25;
+                    particles.y -= 5;
+                } else if (drillDirection === 'up') {
+                    particles.rotation = Math.PI;
+                    particles.y -= 50;
+                }
+
+                drillEmitter.emit = true;
+
+                // Handle active tile and its animation
                 if (activeTile !== res[0].body.tile) {
                     if (activeTile) activeTile.filters = null;
                     activeTile = res[0].body.tile;
@@ -278,7 +316,7 @@ window.addEventListener('load', function () {
             }
         }
 
-        // Generate level
+        // Helpers
 
         function createGrid() {
             var bodies = [];
@@ -400,6 +438,65 @@ window.addEventListener('load', function () {
             drill.pivot.set(30, 36);
 
             updateDrillPosition();
+        }
+
+        function createEmitters() {
+            particles = new PIXI.Container();
+            stage.addChild(particles);
+
+            var emitter = new PIXI.particles.Emitter(
+                particles,
+                resources.piece.texture,
+                {
+                    autoUpdate: true,
+                    alpha: {
+                        start: 1,
+                        end: 0.0
+                    },
+                    scale: {
+                        start: 0.5,
+                        end: 0.3
+                    },
+                    color: {
+                        start: 'ffffff',
+                        end: '9ff3ff',
+                    },
+                    speed: {
+                        start: 1000,
+                        end: 200
+                    },
+                    startRotation: {
+                        min: 225,
+                        max: 320
+                    },
+                    rotationSpeed: {
+                        min: 0,
+                        max: 20
+                    },
+                    lifetime: {
+                        min: 0.25,
+                        max: 0.4
+                    },
+                    blendMode: 'normal',
+                    frequency: 0.001,
+                    emitterLifetime: 0,
+                    maxParticles: 1000,
+                    pos: {
+                        x: 0,
+                        y: 0
+                    },
+                    addAtBack: false,
+                    spawnType: 'circle',
+                    spawnCircle: {
+                        x: 0,
+                        y: 0,
+                        r: 0
+                    }
+                }
+            );
+
+            drillEmitter = emitter;
+            //emitters.push(drillEmitter);
         }
     }
 
