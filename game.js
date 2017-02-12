@@ -1,6 +1,8 @@
 var initialData = {
     fuel: 50,
 };
+var pageLoaded = false;
+var initialDataServed = window.dev;
 
 function initGame() {
     var Engine = Matter.Engine,
@@ -510,13 +512,24 @@ function onMineralDrilled(type) {
     window.parent.postMessage({ type: 'FUEL_GONE' }, '*');
 }
 
+function tryStartGame() {
+    if (pageLoaded && initialDataServed) {
+        initGame();
+    }
+}
+
 window.addEventListener('message', function (e) {
+    console.log('msg', e);
     if (e.data.type === 'START_GAME') {
         window.focus();
         initialData = e.data.initialData;
-        initGame();
+        initialDataServed = true;
         window.parent.postMessage({ type: 'TEST' }, '*');
+        tryStartGame();
     }
 }, false);
 
-if (window.dev) window.addEventListener('load', initGame);
+window.addEventListener('load', function (e) {
+    pageLoaded = true;
+    tryStartGame();
+});
