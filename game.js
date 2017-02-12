@@ -127,6 +127,9 @@ window.addEventListener('load', function () {
         var emitters = [];
         var drillEmitter;
 
+        var fuelRemaining;
+
+console.log('mmmmm');
         init();
 
         function init() {
@@ -517,5 +520,6 @@ setInterval(function () {
 window.addEventListener("message", function (ev) {
     if (ev.data.type === 'START_GAME') {
         window.focus();
+        console.log('start');
     }
 }, false);
