@@ -515,7 +515,8 @@ window.addEventListener('message', function (e) {
         window.focus();
         initialData = e.data.initialData;
         initGame();
+        window.parent.postMessage({ type: 'TEST' }, '*');
     }
 }, false);
 
-window.addEventListener('load', initGame);
+if (window.dev) window.addEventListener('load', initGame);
