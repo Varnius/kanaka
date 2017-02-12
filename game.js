@@ -2,7 +2,7 @@ var initialData = {
     fuel: 50,
 };
 var pageLoaded = false;
-var initialDataServed = window.dev;
+var initialDataServed = true;//window.dev;
 
 function initGame() {
     var Engine = Matter.Engine,
@@ -518,16 +518,17 @@ function tryStartGame() {
     }
 }
 
-window.addEventListener('message', function (e) {
-    console.log('msg', e);
-    if (e.data.type === 'START_GAME') {
-        window.focus();
-        initialData = e.data.initialData;
-        initialDataServed = true;
-        window.parent.postMessage({ type: 'TEST' }, '*');
-        tryStartGame();
-    }
-}, false);
+// wont work :/
+//window.addEventListener('message', function (e) {
+//    console.log('msg', e);
+//    if (e.data.type === 'START_GAME') {
+//        window.focus();
+//        initialData = e.data.initialData;
+//        initialDataServed = true;
+//        window.parent.postMessage({ type: 'TEST' }, '*');
+//        tryStartGame();
+//    }
+//}, false);
 
 window.addEventListener('load', function (e) {
     pageLoaded = true;
