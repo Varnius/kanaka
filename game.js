@@ -1,4 +1,6 @@
-window.addEventListener('load', function () {
+var initialData;
+
+function initGame() {
     var Engine = Matter.Engine,
         Render = Matter.Render,
         World = Matter.World,
@@ -124,12 +126,10 @@ window.addEventListener('load', function () {
         const levelBounds = new PIXI.Rectangle();
 
         var particles;
-        var emitters = [];
         var drillEmitter;
 
-        var fuelRemaining;
+        var fuel = initialData.fuel;
 
-console.log('mmmmm');
         init();
 
         function init() {
@@ -160,16 +160,9 @@ console.log('mmmmm');
             handleDrillProcess();
             updateDrillPosition();
             handleCamera();
-            updateParticles();
             Engine.update(engine);
 
             lastTime = now;
-        }
-
-        function updateParticles() {
-            for (var i = 0; i < emitters.length; i++) {
-                emitters[i].update(delta);
-            }
         }
 
         function handleMovement() {
@@ -499,7 +492,6 @@ console.log('mmmmm');
             );
 
             drillEmitter = emitter;
-            //emitters.push(drillEmitter);
         }
     }
 
@@ -509,17 +501,17 @@ console.log('mmmmm');
     dummyDiv.style.height = '100%';
     dummyDiv.style.position = 'absolute';
     dummyDiv.style.top = '0';
-});
+}
 
-var score = 0;
-setInterval(function () {
-    score += 2;
-    window.parent.postMessage('Your score: ' + score, "*");
-}, 2000);
+function onMineralDrilled(type) {
+    window.parent.postMessage({ type: 'MINED_MINERAL', mineral: type }, '*');
+    window.parent.postMessage({ type: 'FUEL_GONE' }, '*');
+}
 
-window.addEventListener("message", function (ev) {
-    if (ev.data.type === 'START_GAME') {
+window.addEventListener('message', function (e) {
+    if (e.data.type === 'START_GAME') {
         window.focus();
-        console.log('start');
+        initialData = e.data.initialData;
+        initGame();
     }
 }, false);
