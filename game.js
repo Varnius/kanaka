@@ -11,7 +11,8 @@ function initGame() {
         Bodies = Matter.Bodies,
         Body = Matter.Body,
         Query = Matter.Query,
-        Bounds = Matter.Bounds;
+        Bounds = Matter.Bounds,
+        Events = Matter.Events;
 
     const SCREEN_WIDTH = 960;
     const SCREEN_HEIGHT = 600;
@@ -99,7 +100,7 @@ function initGame() {
     // Physics
 
     var engine = Engine.create();
-    engine.world.gravity.y = 11;
+    engine.world.gravity.y = 25;
     var render;
 
     //if (window.dev) {
@@ -146,14 +147,14 @@ function initGame() {
 
         var playerStartPosition = { x: 0, y: 0 };
         var hMov = 0;
-        var maxXVelocity = 260;
-        var maxYVelocity = 500;
+        var maxXVelocity = 320;
+        var maxFlyVelocity = 1000;
         var damping = 0.7;
         var hVelocity = 0;
         var vVelocity = 0;
         var acceleration = 15;
         var isFlying = false;
-        var isFalling = false;
+        var isOnGround = false;
         var isDrilling = false;
         var drillDirection;
         var prevX;
@@ -216,13 +217,15 @@ function initGame() {
             else
                 hVelocity *= damping;
 
-            if (isFlying) vVelocity += acceleration * 2;
+            if (isFlying) vVelocity -= acceleration * 100;
+            if (vVelocity < -maxFlyVelocity) vVelocity = -maxFlyVelocity;
+            vVelocity *= 0.8;
 
+            if (Math.abs(vVelocity) < 0.1) vVelocity = 0;
             if (Math.abs(hVelocity) > maxXVelocity) hVelocity = maxXVelocity * hMov;
             if (Math.abs(hVelocity) < 0.1) hVelocity = 0;
-            if (Math.abs(vVelocity) > maxYVelocity) vVelocity = maxYVelocity;
 
-            Body.setVelocity(drill.body, { x: hVelocity * delta, y: isFlying ? -(vVelocity * delta) : 0 });
+            Body.setVelocity(drill.body, { x: hVelocity * delta, y: vVelocity * delta });
 
             if (Math.abs(prevX - drill.body.position.x) < 0.1 && hMov !== 0) hVelocity = 0;
 
@@ -355,6 +358,23 @@ function initGame() {
             }
         }
 
+        // Physics events
+
+        Events.on(engine, 'collisionActive', function (event) {
+            const pairs = event.pairs;
+
+            // change object colours to show those starting a collision
+            for (let i = 0; i < pairs.length; i++) {
+                const pair = pairs[i];
+                if (pair.bodyA.title === 'sensor' || pair.bodyB.title === 'sensor') {
+                    isOnGround = true;
+                    return;
+                }
+            }
+
+            isOnGround = false;
+        });
+
         // Input events
 
         function onKeyDown(e) {
@@ -440,7 +460,7 @@ function initGame() {
 
             bodies.push(Bodies.rectangle(
                 (-NUM_TILES_X / 2 * TILE_SIZE) + (NUM_TILES_X / 2 * TILE_SIZE),
-                -TILE_SIZE * 2 + TILE_SIZE / 2 + 12,
+                -TILE_SIZE * 2 + TILE_SIZE / 2 + 17,
                 NUM_TILES_X * 2 * TILE_SIZE,
                 TILE_SIZE,
                 { isStatic: true })
@@ -460,7 +480,11 @@ function initGame() {
 
         function createDrill() {
             const drillBody = Matter.Bodies.rectangle(0, 0, 64, 48, { chamfer: { radius: 30 } });
-            const jumpSensor = Bodies.rectangle(0, 28, 10, 10, { sleepThreshold: 99999999999, isSensor: true })
+            const jumpSensor = Bodies.rectangle(0, 28, 10, 10, {
+                sleepThreshold: 99999999999,
+                title: 'sensor',
+                isSensor: true
+            });
             const player = Body.create({
                 parts: [drillBody, jumpSensor],
                 inertia: Infinity, //prevents player rotation
