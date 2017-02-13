@@ -54,7 +54,7 @@ function initGame() {
             texture: () => 'copper',
             fuel: 4,
             chance: 0.1,
-            drillDuration: 2,
+            drillDuration: 4,
             depth: { from: 0.1, to: 0.4 },
         },
         SILVER: {
@@ -62,7 +62,7 @@ function initGame() {
             texture: () => 'silver',
             fuel: 8,
             chance: 0.1,
-            drillDuration: 2,
+            drillDuration: 6,
             depth: { from: 0.2, to: 0.6 },
         },
         GOLD: {
@@ -70,15 +70,15 @@ function initGame() {
             texture: () => 'gold',
             fuel: 16,
             chance: 0.1,
-            drillDuration: 2,
+            drillDuration: 8,
             depth: { from: 0.5, to: 0.8 },
         },
         TITAN: {
             eventId: 'titan',
-            texture: () => 'wixium',
+            texture: () => 'titan',
             fuel: 32,
             chance: 0.1,
-            drillDuration: 2,
+            drillDuration: 10,
             depth: { from: 0.7, to: 1.0 },
         },
     };
@@ -129,13 +129,13 @@ function initGame() {
     PIXI.loader.add('gold', assetLocation + 'assets/gold.png');
     PIXI.loader.add('copper', assetLocation + 'assets/copper.png');
     PIXI.loader.add('silver', assetLocation + 'assets/silver.png');
-    PIXI.loader.add('wixium', assetLocation + 'assets/wixium.png');
-    PIXI.loader.add('pieceDirt', assetLocation + 'assets/piece.png');
-    PIXI.loader.add('pieceIron', assetLocation + 'assets/piece.png');
-    PIXI.loader.add('pieceSilver', assetLocation + 'assets/piece.png');
-    PIXI.loader.add('pieceGold', assetLocation + 'assets/piece.png');
-    PIXI.loader.add('pieceCopper', assetLocation + 'assets/piece.png');
-    PIXI.loader.add('pieceWixium', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('titan', assetLocation + 'assets/titan.png');
+    PIXI.loader.add('piecedirt', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceiron', assetLocation + 'assets/iron-piece.png');
+    PIXI.loader.add('piecesilver', assetLocation + 'assets/silver-piece.png');
+    PIXI.loader.add('piecegold', assetLocation + 'assets/gold-piece.png');
+    PIXI.loader.add('piececopper', assetLocation + 'assets/copper-piece.png');
+    PIXI.loader.add('piecetitan', assetLocation + 'assets/titan-piece.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
@@ -262,7 +262,7 @@ function initGame() {
                 particles.x = drillBounds.x + drillBounds.width / 2;
                 particles.y = drillBounds.y + drillBounds.height - 27;
                 particles.rotation = 0;
-                //drillEmitter.particleImages = [ll];
+                drillEmitter.particleImages = [resources['piece' + type.eventId].texture];
 
                 if (drillDirection === 'left') {
                     particles.rotation = Math.PI / 2;
@@ -521,7 +521,7 @@ function initGame() {
 
             var emitter = new PIXI.particles.Emitter(
                 particles,
-                resources.pieceDirt.texture,
+                resources.piecedirt.texture,
                 {
                     autoUpdate: true,
                     alpha: {
