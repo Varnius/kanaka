@@ -53,7 +53,7 @@ function initGame() {
             fuel: 4,
             chance: 0.1,
             drillDuration: 2,
-            depth: { from: 0.0, to: 0.2 },
+            depth: { from: 0.1, to: 0.4 },
         },
         SILVER: {
             eventId: 'silver',
@@ -361,7 +361,9 @@ function initGame() {
                     if (j === 0) type = TileType.GRASS;
                     else {
                         var currDepth = j / NUM_TILES_Y;
-                        var good = GOODS.filter(item => currDepth >= item.depth.from && currDepth < item.depth.to)[0];
+                        var filteredGoods = GOODS.filter(item => currDepth >= item.depth.from && currDepth < item.depth.to);
+                        var index = Math.floor(Math.random() * (filteredGoods.length));
+                        var good = filteredGoods[index];
                         type = good && Math.random() < good.chance ? good : TileType.DIRT;
                     }
 
