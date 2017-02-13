@@ -24,39 +24,65 @@ function initGame() {
 
     var TileType = {
         GRASS: {
+            eventId: 'dirt',
             drillDuration: 0.5,
+            fuel: 1,
             texture: () => 'grass',
         },
-        REGULAR: {
+        DIRT: {
+            eventId: 'dirt',
             drillDuration: 0.5,
-            texture: () => 'dirt',
+            fuel: 1,
+            texture: () => Math.random() < 0.5 ? 'dirt' : 'dirt2',
         },
         DRILLED: {
             ghost: true,
             texture: () => 'drilled',
         },
         IRON: {
+            eventId: 'iron',
             texture: () => 'iron',
-            chance: 0.05,
+            fuel: 2,
+            chance: 0.1,
             drillDuration: 2,
-            depth: { from: 0, to: 0.6 },
+            depth: { from: 0.0, to: 0.3 },
+        },
+        COPPER: {
+            eventId: 'copper',
+            texture: () => 'copper',
+            fuel: 4,
+            chance: 0.1,
+            drillDuration: 2,
+            depth: { from: 0.0, to: 0.2 },
+        },
+        SILVER: {
+            eventId: 'silver',
+            texture: () => 'silver',
+            fuel: 8,
+            chance: 0.1,
+            drillDuration: 2,
+            depth: { from: 0.2, to: 0.6 },
         },
         GOLD: {
+            eventId: 'gold',
             texture: () => 'gold',
-            chance: 0.05,
+            fuel: 16,
+            chance: 0.1,
             drillDuration: 2,
-            depth: { from: 0.4, to: 0.8 },
+            depth: { from: 0.5, to: 0.8 },
         },
-        WIXIUM: {
+        TITAN: {
+            eventId: 'titan',
             texture: () => 'wixium',
-            chance: 0.05,
+            fuel: 32,
+            chance: 0.1,
             drillDuration: 2,
             depth: { from: 0.7, to: 1.0 },
         },
     };
 
     const GOODS = [
-        TileType.IRON, TileType.GOLD, TileType.WIXIUM,
+        TileType.IRON, TileType.GOLD, TileType.TITAN, TileType.COPPER, TileType.SILVER,
     ];
 
     // Setup PIXI
@@ -96,9 +122,12 @@ function initGame() {
     PIXI.loader.add('piece', assetLocation + 'assets/piece.png');
     PIXI.loader.add('drilled', assetLocation + 'assets/drilled.png');
     PIXI.loader.add('dirt', assetLocation + 'assets/dirt.png');
+    PIXI.loader.add('dirt2', assetLocation + 'assets/dirt2.png');
     PIXI.loader.add('grass', assetLocation + 'assets/grass.png');
     PIXI.loader.add('iron', assetLocation + 'assets/iron.png');
     PIXI.loader.add('gold', assetLocation + 'assets/gold.png');
+    PIXI.loader.add('copper', assetLocation + 'assets/copper.png');
+    PIXI.loader.add('silver', assetLocation + 'assets/silver.png');
     PIXI.loader.add('wixium', assetLocation + 'assets/wixium.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
@@ -254,6 +283,8 @@ function initGame() {
                     tiles.addChild(drilledTile);
                     drilledTile.position = activeTile.position;
                     Matter.World.remove(engine.world, activeTile.body);
+
+                    onMineralDrilled(activeTile.type);
                 }
             }
         }
@@ -331,7 +362,7 @@ function initGame() {
                     else {
                         var currDepth = j / NUM_TILES_Y;
                         var good = GOODS.filter(item => currDepth >= item.depth.from && currDepth < item.depth.to)[0];
-                        type = good && Math.random() < good.chance ? good : TileType.REGULAR;
+                        type = good && Math.random() < good.chance ? good : TileType.DIRT;
                     }
 
                     var tile = new PIXI.Sprite(resources[type.texture()].texture);
@@ -345,6 +376,7 @@ function initGame() {
                             isStatic: true,
                             label: `tile ${i} ${j}`
                         });
+                        tile.type = type;
                         tile.body.tile = tile;
                         tile.timeLeft = type.drillDuration;
                         bodies.push(tile.body);
@@ -508,7 +540,7 @@ function initGame() {
 }
 
 function onMineralDrilled(type) {
-    window.parent.postMessage({ type: 'MINED_MINERAL', mineral: type }, '*');
+    window.parent.postMessage({ type: 'MINED_MINERAL', mineral: type.eventId }, '*');
     window.parent.postMessage({ type: 'FUEL_GONE' }, '*');
 }
 
@@ -518,9 +550,7 @@ function tryStartGame() {
     }
 }
 
-// wont work :/
 window.addEventListener('message', function (e) {
-    console.log('msg', e);
     if (e.data.type === 'START_GAME') {
         window.focus();
         initialData = e.data.initialData;
