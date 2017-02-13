@@ -21,6 +21,7 @@ function initGame() {
     const PREVENT_DEFAULT_FOR = [37, 38, 39, 40, 32, 68];
     const DRILL_KEYS = [37, 38, 39, 40];
     const RUBBER_BAND_FACTOR = 10;
+    const INITIAL_FUEL = 50;
 
     var TileType = {
         GRASS: {
@@ -46,6 +47,7 @@ function initGame() {
             chance: 0.1,
             drillDuration: 2,
             depth: { from: 0.0, to: 0.3 },
+            color: [208, 226, 248],
         },
         COPPER: {
             eventId: 'copper',
@@ -88,7 +90,7 @@ function initGame() {
     // Setup PIXI
 
     //PIXI.SCALE_MODES.DEFAULT = PIXI.SCALE_MODES.NEAREST;
-    var app = new PIXI.Application(SCREEN_WIDTH, SCREEN_HEIGHT, { backgroundColor: 0x1099bb, roundPixels: true });
+    var app = new PIXI.Application(SCREEN_WIDTH, SCREEN_HEIGHT, { backgroundColor: 0xF5A38F, roundPixels: true });
     var stage = app.stage;
     var level = new PIXI.Container();
     stage.addChild(level);
@@ -99,19 +101,19 @@ function initGame() {
 
     var engine = Engine.create();
     engine.world.gravity.y = 11;
-    var render;
-
-    if (window.dev) {
-        //render = Render.create({
-        //    element: document.body,
-        //    engine: engine,
-        //    options: {
-        //        width: SCREEN_WIDTH,
-        //        height: SCREEN_HEIGHT,
-        //        hasBounds: true,
-        //    }
-        //});
-    }
+    //var render;
+    //
+    //if (window.dev) {
+    //    render = Render.create({
+    //        element: document.body,
+    //        engine: engine,
+    //        options: {
+    //            width: SCREEN_WIDTH,
+    //            height: SCREEN_HEIGHT,
+    //            hasBounds: true,
+    //        }
+    //    });
+    //}
 
     // Load things
 
@@ -119,7 +121,6 @@ function initGame() {
 
     PIXI.loader.add('drill', assetLocation + 'assets/drill.png');
     PIXI.loader.add('apparatus', assetLocation + 'assets/apparatus.png');
-    PIXI.loader.add('piece', assetLocation + 'assets/piece.png');
     PIXI.loader.add('drilled', assetLocation + 'assets/drilled.png');
     PIXI.loader.add('dirt', assetLocation + 'assets/dirt.png');
     PIXI.loader.add('dirt2', assetLocation + 'assets/dirt2.png');
@@ -129,6 +130,12 @@ function initGame() {
     PIXI.loader.add('copper', assetLocation + 'assets/copper.png');
     PIXI.loader.add('silver', assetLocation + 'assets/silver.png');
     PIXI.loader.add('wixium', assetLocation + 'assets/wixium.png');
+    PIXI.loader.add('pieceDirt', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceIron', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceSilver', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceGold', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceCopper', assetLocation + 'assets/piece.png');
+    PIXI.loader.add('pieceWixium', assetLocation + 'assets/piece.png');
     PIXI.loader.once('complete', onAssetsLoaded);
     PIXI.loader.load();
 
@@ -138,6 +145,7 @@ function initGame() {
 
         var activeDrillKeys = [];
 
+        var playerStartPosition = { x: 0, y: 0 };
         var hMov = 0;
         var maxXVelocity = 260;
         var maxYVelocity = 400;
@@ -161,7 +169,9 @@ function initGame() {
         var particles;
         var drillEmitter;
 
-        var fuel = initialData.fuel;
+        // handle in game for now
+        var fuel = INITIAL_FUEL; //initialData.fuel;
+        var lifes = 3;
 
         init();
 
@@ -193,12 +203,15 @@ function initGame() {
             handleDrillProcess();
             updateDrillPosition();
             handleCamera();
+            handleRefill();
+
             Engine.update(engine);
 
             lastTime = now;
         }
 
         function handleMovement() {
+
             if (hMov !== 0)
                 hVelocity += (hVelocity * hMov < 0 ? 4 : 1) * acceleration * hMov;
             else
@@ -242,11 +255,14 @@ function initGame() {
             drillEmitter.emit = false;
 
             if (res.length > 1 && res[0].body.tile) {
+                var type = res[0].body.tile.type;
+
                 // Handle drilled particle positions
                 var drillBounds = drill.getBounds();
                 particles.x = drillBounds.x + drillBounds.width / 2;
                 particles.y = drillBounds.y + drillBounds.height - 27;
                 particles.rotation = 0;
+                //drillEmitter.particleImages = [ll];
 
                 if (drillDirection === 'left') {
                     particles.rotation = Math.PI / 2;
@@ -267,12 +283,10 @@ function initGame() {
                 if (activeTile !== res[0].body.tile) {
                     if (activeTile) activeTile.filters = null;
                     activeTile = res[0].body.tile;
-                    activeTileFilter.contrast(2);
                     activeTile.filters = [activeTileFilter];
                 } else {
                     let d = new Date().getTime();
                     activeTile.filters[0].brightness((Math.sin(d / 20) / 2 + 2) / 2 + 0.5);
-
                 }
 
                 activeTile.timeLeft -= delta;
@@ -285,6 +299,10 @@ function initGame() {
                     Matter.World.remove(engine.world, activeTile.body);
 
                     onMineralDrilled(activeTile.type);
+                    fuel -= activeTile.type.fuel;
+                    onFuelChange(fuel <= 0 ? 0 : fuel)
+
+                    if (fuel <= 0) fuelOver();
                 }
             }
         }
@@ -313,6 +331,29 @@ function initGame() {
             if (r.x > 0) level.x = -levelBounds.x;
             if (r.x + r.width < SCREEN_WIDTH) level.x = -(levelBounds.width + levelBounds.x - SCREEN_WIDTH);
             //if (r.y > 0) level.y = -levelBounds.y;
+        }
+
+        function fuelOver() {
+            drill.filters = [activeTileFilter];
+
+            var interval = setInterval(function () {
+                var d = new Date().getTime();
+                if (drill.filters) drill.filters[0].brightness((Math.sin(d / 20) / 2 + 2) / 2 + 0.5);
+            }, 20);
+
+            setTimeout(function () {
+                onFuelGone();
+                Matter.Body.setPosition(drill.body, playerStartPosition);
+                drill.filters = null;
+                clearInterval(interval);
+            }, 1000);
+        }
+
+        function handleRefill() {
+            if (drill.body.position.y < -25 && fuel !== INITIAL_FUEL) {
+                onFuelChange(INITIAL_FUEL);
+                fuel = INITIAL_FUEL;
+            }
         }
 
         // Input events
@@ -437,7 +478,7 @@ function initGame() {
                 //frictionStatic: 0.5,
                 //collisionFilter: {group: -2},
             });
-            Matter.Body.setPosition(player, { x: 0, y: 0 });
+            Matter.Body.setPosition(player, playerStartPosition);
             Matter.Body.setMass(player, 5);
             World.add(engine.world, [player]);
 
@@ -480,7 +521,7 @@ function initGame() {
 
             var emitter = new PIXI.particles.Emitter(
                 particles,
-                resources.piece.texture,
+                resources.pieceDirt.texture,
                 {
                     autoUpdate: true,
                     alpha: {
@@ -543,7 +584,14 @@ function initGame() {
 
 function onMineralDrilled(type) {
     window.parent.postMessage({ type: 'MINED_MINERAL', mineral: type.eventId }, '*');
+}
+
+function onFuelGone() {
     window.parent.postMessage({ type: 'FUEL_GONE' }, '*');
+}
+
+function onFuelChange(amount) {
+    window.parent.postMessage({ type: 'FUEL_CHANGE', amount }, '*');
 }
 
 function tryStartGame() {
