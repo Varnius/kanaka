@@ -89,7 +89,6 @@ function initGame() {
 
     // Setup PIXI
 
-    //PIXI.SCALE_MODES.DEFAULT = PIXI.SCALE_MODES.NEAREST;
     var app = new PIXI.Application(SCREEN_WIDTH, SCREEN_HEIGHT, { backgroundColor: 0xF5A38F, roundPixels: true });
     var stage = app.stage;
     var level = new PIXI.Container();
@@ -101,8 +100,8 @@ function initGame() {
 
     var engine = Engine.create();
     engine.world.gravity.y = 11;
-    //var render;
-    //
+    var render;
+
     //if (window.dev) {
     //    render = Render.create({
     //        element: document.body,
@@ -148,12 +147,13 @@ function initGame() {
         var playerStartPosition = { x: 0, y: 0 };
         var hMov = 0;
         var maxXVelocity = 260;
-        var maxYVelocity = 400;
+        var maxYVelocity = 500;
         var damping = 0.7;
         var hVelocity = 0;
         var vVelocity = 0;
         var acceleration = 15;
         var isFlying = false;
+        var isFalling = false;
         var isDrilling = false;
         var drillDirection;
         var prevX;
@@ -171,7 +171,6 @@ function initGame() {
 
         // handle in game for now
         var fuel = INITIAL_FUEL; //initialData.fuel;
-        var lifes = 3;
 
         init();
 
@@ -190,7 +189,7 @@ function initGame() {
 
             // physics debug renderer
             //if (window.dev) Render.run(render);
-            //Bounds.translate(render.bounds, {x:-400, y: -400});
+            //Bounds.translate(render.bounds, {x:-200, y: 0});
         }
 
         // Game loop
@@ -330,7 +329,7 @@ function initGame() {
 
             if (r.x > 0) level.x = -levelBounds.x;
             if (r.x + r.width < SCREEN_WIDTH) level.x = -(levelBounds.width + levelBounds.x - SCREEN_WIDTH);
-            //if (r.y > 0) level.y = -levelBounds.y;
+            //if (r.y > TILE_SIZE * 2) level.y = TILE_SIZE * 2; meh
         }
 
         function fuelOver() {
@@ -460,16 +459,10 @@ function initGame() {
         }
 
         function createDrill() {
-            const drillBody = Matter.Bodies.rectangle(0, 0, 60, 42);
-
-            var jumpSensor = Bodies.rectangle(0, 28, 10, 10, { sleepThreshold: 99999999999, isSensor: true });
-            var c1 = Bodies.circle(-23, -16, 10);
-            var c2 = Bodies.circle(-23, 16, 10);
-            var c3 = Bodies.circle(23, -16, 10);
-            var c4 = Bodies.circle(23, 16, 10);
-
+            const drillBody = Matter.Bodies.rectangle(0, 0, 64, 48, { chamfer: { radius: 30 } });
+            const jumpSensor = Bodies.rectangle(0, 28, 10, 10, { sleepThreshold: 99999999999, isSensor: true })
             const player = Body.create({
-                parts: [drillBody, jumpSensor, c1, c2, c3, c4],
+                parts: [drillBody, jumpSensor],
                 inertia: Infinity, //prevents player rotation
                 friction: 0.002,
                 restitution: 0.3,
@@ -510,7 +503,7 @@ function initGame() {
             level.addChild(drill);
             drill.addChild(new PIXI.Sprite(resources.apparatus.texture));
             drill.addChild(drilly);
-            drill.pivot.set(30, 36);
+            drill.pivot.set(30, 39);
 
             updateDrillPosition();
         }
